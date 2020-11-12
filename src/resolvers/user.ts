@@ -75,7 +75,7 @@ export class UserResolver {
                 // duplicate username error
                 return {
                     errors: [{
-                        field: "unsername",
+                        field: "username",
                         message: "username already taken"
                     }]
                 }
