@@ -2,8 +2,10 @@ import {Arg, Ctx, Field, InputType, Mutation, ObjectType, Query, Resolver} from 
 import {MyContext} from "../types";
 import {User} from "../entities/User";
 import argon2 from "argon2"
-import {COOKIE_NAME} from "../constants";
+import {COOKIE_NAME, FORGET_PASSWORD_PREFIX} from "../constants";
 import {validateRegister} from "../utils/validateRegister";
+import {sendEmail} from "../utils/sendEmail";
+import {v4} from "uuid";
 
 @InputType()
 export class UsernamePasswordInput {
@@ -40,9 +42,21 @@ export class UserResolver {
     @Mutation(() => Boolean)
     async forgotPassword(
         @Arg("email") email: string,
-        @Ctx() {req}: MyContext
+        @Ctx() {em, redis}: MyContext
     ) {
-        // const user = await em.findOne(User, {})
+        const user = await em.findOne(User, {email});
+        if (!user) {
+            return true
+        }
+
+        const token = v4();
+
+        await redis.set(FORGET_PASSWORD_PREFIX + token, user.id, "ex", 1000 * 60 * 60 * 24 * 3); // 3 days
+
+        await sendEmail(
+            email,
+            `<a href="http://localhost:3000/change-password/${token}">reset password</a>`
+        );
         return true;
     }
 
