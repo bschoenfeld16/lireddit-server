@@ -52,10 +52,11 @@ export class PostResolver {
         let qb = getConnection()
             .getRepository(Post)
             .createQueryBuilder("p")
-            .orderBy('"createdAt"', "DESC")
+            .innerJoinAndSelect("p.creator", "u", 'u.id = p."creatorId"')
+            .orderBy("p.createdAt", "DESC")
             .take(realLimitPlusOne);
         if (cursor) {
-            qb.where('"createdAt" < :cursor', {
+            qb.where("p.createdAtt < :cursor", {
                 cursor: new Date(parseInt(cursor)),
             });
         }
