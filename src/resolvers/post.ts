@@ -16,6 +16,7 @@ import { Post } from "../entities/Post";
 import { MyContext } from "../types";
 import { isAuth } from "../middleware/isAuth";
 import { getConnection } from "typeorm";
+import { Updoot } from "../entities/Updoot";
 
 @InputType()
 class PostInput {
@@ -42,6 +43,33 @@ export class PostResolver {
         return root.text.slice(0, 50);
     }
 
+    @Mutation(() => Boolean)
+    @UseMiddleware(isAuth)
+    async vote(
+        @Arg("postId", () => Int) postId: number,
+        @Arg("value", () => Int) value: number,
+        @Ctx() { req }: MyContext
+    ) {
+        const isUpdoot = value !== -1;
+        const realValue = isUpdoot ? 1 : -1;
+        const { userId } = req.session;
+        await getConnection().transaction(async (transActionEntityManager) => {
+            await transActionEntityManager.insert(Updoot, {
+                userId,
+                postId,
+                value: realValue,
+            });
+
+            await transActionEntityManager
+                .createQueryBuilder()
+                .update(Post)
+                .set({ points: () => `points + ${realValue}` })
+                .where("id = :id", { id: postId })
+                .execute();
+        });
+        return true;
+    }
+
     @Query(() => PaginatedPosts)
     async posts(
         @Arg("limit", () => Int) limit: number,
@@ -56,7 +84,7 @@ export class PostResolver {
             .orderBy("p.createdAt", "DESC")
             .take(realLimitPlusOne);
         if (cursor) {
-            qb.where("p.createdAtt < :cursor", {
+            qb.where("p.createdAt < :cursor", {
                 cursor: new Date(parseInt(cursor)),
             });
         }
