@@ -54,18 +54,39 @@ export class PostResolver {
         const realValue = isUpdoot ? 1 : -1;
         const { userId } = req.session;
         await getConnection().transaction(async (transActionEntityManager) => {
-            await transActionEntityManager.insert(Updoot, {
-                userId,
-                postId,
-                value: realValue,
+            const updoot = await transActionEntityManager.findOne(Updoot, {
+                where: { userId, postId },
             });
 
-            await transActionEntityManager
-                .createQueryBuilder()
-                .update(Post)
-                .set({ points: () => `points + ${realValue}` })
-                .where("id = :id", { id: postId })
-                .execute();
+            if (updoot && updoot.value === realValue) {
+                // do nothing
+            } else {
+                let pointChange = realValue;
+                if (updoot && updoot.value !== realValue) {
+                    await transActionEntityManager.update(
+                        Updoot,
+                        { userId, postId },
+                        {
+                            userId,
+                            postId,
+                            value: realValue,
+                        }
+                    );
+                    pointChange = 2 * realValue;
+                } else if (!updoot) {
+                    await transActionEntityManager.insert(Updoot, {
+                        userId,
+                        postId,
+                        value: realValue,
+                    });
+                }
+                await transActionEntityManager
+                    .createQueryBuilder()
+                    .update(Post)
+                    .set({ points: () => `points + ${pointChange}` })
+                    .where("id = :id", { id: postId })
+                    .execute();
+            }
         });
         return true;
     }
