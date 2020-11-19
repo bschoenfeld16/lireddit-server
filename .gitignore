@@ -23,3 +23,6 @@ yarn-error.log*
 .idea/*
 
 dist/
+
+.env
+.env.production
