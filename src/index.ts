@@ -55,7 +55,7 @@ const main = async () => {
                 httpOnly: true,
                 sameSite: "lax", // csrf
                 secure: __prod__, // cookie only works in https
-                domain: __prod__ ? ".157.245.245.149" : undefined,
+                domain: __prod__ ? ".benschoenfeld.com" : undefined,
             },
             saveUninitialized: false,
             secret: process.env.SESSION_SECRET,
