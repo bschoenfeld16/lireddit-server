@@ -19,7 +19,7 @@ import path from "path";
 import { Updoot } from "./entities/Updoot";
 
 const main = async () => {
-    const conn = await createConnection({
+    await createConnection({
         type: "postgres",
         url: process.env.DATABASE_URL,
         logging: true,
